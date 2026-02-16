@@ -89,7 +89,7 @@ def process_agent_logic(message_data: dict):
     # 2. FETCH CHAT HISTORY (The Sliding Window)
     # ==========================================
     history_response = supabase.table('messages')\
-        .select('*')\
+        .select('*, profiles(full_name)')\
         .eq('channel_id', channel_id)\
         .eq('status', 'APPROVED')\
         .order('created_at', desc=True)\
@@ -102,7 +102,8 @@ def process_agent_logic(message_data: dict):
     # Reverse it so oldest is first, newest is last
     for msg in reversed(history_response.data):
         if msg.get('sender_id'):
-            speaker = "User"
+            user_data = msg.get('profiles') or {}
+            speaker = f"[{user_data.get('full_name', 'User')}]"
             agent_message_count = 0 
         else:
             # FIX: Look up the real name! If not found, fallback to "Unknown Agent"
@@ -111,6 +112,13 @@ def process_agent_logic(message_data: dict):
             agent_message_count += 1 
             
         chat_history += f"{speaker}: {msg['content']}\n"
+
+    # remove this block for prod version this is just to debug if the user full_name is getting retrieved acurately
+    print("\n--- 🔍 DEBUG: CHECKING PROFILE JOIN ---")
+    for msg in history_response.data:
+        if msg.get('sender_id'): # Only check human messages
+            print(f"Human Msg: '{msg.get('content')[:20]}...' | Profile Data Retrieved: {msg.get('profiles')}")
+    print("---------------------------------------\n")
 
     # ==========================================
     # 3. CIRCUIT BREAKER
