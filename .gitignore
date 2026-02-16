@@ -1,0 +1,6 @@
+*
+!*/
+venv/
+!.gitignore
+!*.py
+!requirements.txt
