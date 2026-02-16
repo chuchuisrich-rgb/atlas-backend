@@ -4,3 +4,4 @@ venv/
 !.gitignore
 !*.py
 !requirements.txt
+!README.md
