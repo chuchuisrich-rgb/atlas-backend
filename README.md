@@ -98,3 +98,8 @@ curl http://localhost:8000/
 - The service currently uses synchronous HTTP (`requests`) inside agent processing.
 - Background tasks are in-process (not a persistent queue).
 - For production scale, consider durable workers/queues, retries, and idempotency keys.
+
+
+Need to change the `WEBHOOK_NOTIFY_URL` field in lovable -> cloud -> secrets
+to point the backend to local or to the render
+local WEBHOOK_NOTIFY_URL: https://flexibly-winish-zulema.ngrok-free.dev/webhook/messages

@@ -68,8 +68,8 @@ def process_agent_logic(message_data: dict):
     # 0. MARK INCOMING MESSAGE AS PROCESSED
     # ==========================================
     # We are reading this message now, so we mark it True so we never read it again.
-    if message_id:
-        supabase.table('messages').update({"is_processed": True}).eq('id', message_id).execute()
+    # if message_id:
+    #     supabase.table('messages').update({"is_processed": True}).eq('id', message_id).execute()
 
     # ==========================================
     # 1. FETCH ACTIVE AGENTS (Moved up!)
@@ -208,6 +208,8 @@ def process_agent_logic(message_data: dict):
                     "is_processed": is_processed_flag 
                 }).execute()
                 
+                if message_id:
+                    supabase.table('messages').update({"is_processed": True}).eq('id', message_id).execute()
                 break 
                 
             else:
@@ -400,6 +402,9 @@ def process_agent_logic2(message_data: dict):
                     "status": final_status,
                     "is_processed": is_processed_flag 
                 }).execute()
+
+                if message_id:
+                    supabase.table('messages').update({"is_processed": True}).eq('id', message_id).execute()
                 
                 # We found an agent to speak! Break the loop so they don't all talk at once.
                 break 
