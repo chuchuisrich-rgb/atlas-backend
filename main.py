@@ -171,7 +171,7 @@ def process_agent_logic(message_data: dict):
 
                 if agent['type'] == 'PORTED':
                     payload = {"message": chat_history, "channel_id": channel_id, "agent_id": agent['id']}
-                    print(f"webhook_headers: {agent.get('webhook_headers')}")
+                    # print(f"webhook_headers: {agent.get('webhook_headers')}")
                     # ... inside your webhook agent block ...
                     res = requests.post(
                         agent.get('webhook_url'),
