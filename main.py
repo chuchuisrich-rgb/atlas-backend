@@ -100,6 +100,7 @@ def process_agent_logic(message_data: dict):
     agent_message_count = 0  
     
     # Reverse it so oldest is first, newest is last
+    print("history response date: ", history_response)
     for msg in reversed(history_response.data):
         if msg.get('sender_id'):
             user_data = msg.get('profiles') or {}
@@ -139,7 +140,7 @@ def process_agent_logic(message_data: dict):
     # 4. THE ROUTER LOOP
     # ==========================================
     for agent in active_agents:
-        
+        print(f"complete agent info: {agent}")
         # Stop an agent from replying to itself
         if history_response.data and history_response.data[0].get('agent_id') == agent['id']:
             continue
@@ -166,11 +167,36 @@ def process_agent_logic(message_data: dict):
                 print(f"✅ {agent['name']} decided to speak.")
                 agent_spoke = True
                 reply_content = ""
-                
-                if agent['type'] == 'WEBHOOK':
+                print(f"agent type is {agent['type']}")
+
+                if agent['type'] == 'PORTED':
                     payload = {"message": chat_history, "channel_id": channel_id, "agent_id": agent['id']}
-                    res = requests.post(agent.get('webhook_url'), json=payload, headers=agent.get('webhook_headers', {}), timeout=10)
-                    reply_content = res.json().get("response", "Error") if res.status_code == 200 else f"Error: {res.status_code}"
+                    # ... inside your webhook agent block ...
+                    res = requests.post(
+                        agent.get('webhook_url'),
+                        json=payload,
+                        headers=agent.get('webhook_headers', {'Content-Type': 'application/json'}),
+                        timeout=10
+                    )
+
+                    print(f"Request response received: {res.status_code}")
+
+                    if res.status_code == 200:
+                        data = res.json()
+                        print(f"Full JSON response: {data}")
+
+                        # n8n typically returns a list, e.g., [{"output": "hello"}]
+                        # We check if it's a list and get the first item
+                        if isinstance(data, list) and len(data) > 0:
+                            first_item = data[0]
+                            # Adjust 'output' to match whatever key your n8n workflow sends back
+                            reply_content = first_item.get("output") or "Agent responded but provided no content."
+                        else:
+                            # If it's just a flat dictionary
+                            reply_content = data.get("output") or data.get("response") or "Error: Unexpected JSON format"
+                    else:
+                        reply_content = f"Error: Webhook returned status {res.status_code}"
+
                 else:
                     base_prompt = agent.get('system_prompt', "You are a helpful assistant.")
                     formatting_rule = "\n\nIMPORTANT FORMATTING RULES:\n1. Be concise.\n2. Use Markdown.\n3. No walls of text."
@@ -183,6 +209,8 @@ def process_agent_logic(message_data: dict):
                         ]
                     )
                     reply_content = response_completion.choices[0].message.content
+
+                print(f"reply_content is {reply_content}")
 
                 # --- GATEKEEPER LOGIC ---
                 final_status = "APPROVED" 
@@ -240,7 +268,9 @@ async def messages_webhook(
     authorization: str = Header(None)
 ):
     """Receives ping from Supabase and processes in the background."""
-    expected_secret = f"Bearer {os.environ.get('WEBHOOK_SECRET')}"
+    expected_secret_old = f"Bearer {os.environ.get('WEBHOOK_SECRET')}"
+    expected_secret = os.environ.get('WEBHOOK_SECRET')
+    # print("Received authorization: ", authorization)
     if authorization != expected_secret:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
